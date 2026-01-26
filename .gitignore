@@ -1,0 +1,13 @@
+### IDE та редактори ###
+.idea/
+*.iml
+.vscode/
+*.sublime-workspace
+
+### Операційна система ###
+.DS_Store
+Thumbs.db
+desktop.ini
+
+### Логи (загальні) ###
+*.log

@@ -2,3 +2,4 @@ package ua.nulp.backend.entity.shop;
 
 public class PromotionProduct {
 }
+1

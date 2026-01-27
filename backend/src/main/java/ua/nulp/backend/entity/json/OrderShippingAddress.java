@@ -3,7 +3,7 @@ package ua.nulp.backend.entity.json;
 import lombok.Data;
 import ua.nulp.backend.entity.enums.DeliveryProvider;
 import java.io.Serializable;
-
+//Також можливо переробити
 @Data
 public class OrderShippingAddress implements Serializable {
     // Географія

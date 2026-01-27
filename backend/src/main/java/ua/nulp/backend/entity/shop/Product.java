@@ -8,8 +8,6 @@ import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 import ua.nulp.backend.entity.enums.PriceAnalysisStatus;
-import ua.nulp.backend.entity.shop.Shop;
-import ua.nulp.backend.entity.shop.Category;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -20,7 +18,8 @@ import java.util.Map;
 @Table(name = "products", indexes = {
         @Index(name = "idx_product_shop", columnList = "shop_id"),
         @Index(name = "idx_product_category", columnList = "category_id"),
-        @Index(name = "idx_product_price", columnList = "price") // Для фільтрів "від дешевих"
+        @Index(name = "idx_product_price", columnList = "price"),
+        @Index(name = "idx_product_rating", columnList = "rating")
 })
 @Getter @Setter
 @Builder
@@ -55,6 +54,15 @@ public class Product {
     @Column(name = "discount_price", precision = 10, scale = 2)
     private BigDecimal discountPrice;
 
+    @Column(name = "is_available", nullable = false)
+    @Builder.Default
+    private boolean isAvailable = true;
+
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(columnDefinition = "jsonb", nullable = false)
+    @Builder.Default
+    private Map<String, String> attributes = new HashMap<>();
+
     @Enumerated(EnumType.STRING)
     @Column(name = "price_analysis_status")
     @Builder.Default
@@ -62,15 +70,6 @@ public class Product {
 
     @Column(name = "estimated_market_price", precision = 10, scale = 2)
     private BigDecimal estimatedMarketPrice;
-
-    @JdbcTypeCode(SqlTypes.JSON)
-    @Column(columnDefinition = "jsonb", nullable = false)
-    @Builder.Default
-    private Map<String, String> attributes = new HashMap<>();
-
-    @Column(name = "is_available", nullable = false)
-    @Builder.Default
-    private boolean isAvailable = true;
 
     @Column(nullable = false)
     @Builder.Default

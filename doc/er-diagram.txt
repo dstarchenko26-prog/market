@@ -1,0 +1,361 @@
+// Use DBML to define your database structure
+// Docs: https://dbml.dbdiagram.io/docs
+
+// ==========================================
+// 1. ENUMS
+// ==========================================
+
+Enum user_role {
+  BUYER
+  SELLER
+  ADMIN
+}
+
+Enum user_status {
+  ACTIVE
+  PENDING
+  BANNED
+}
+
+Enum shop_status {
+  DRAFT
+  PENDING
+  ACTIVE
+  BLOCKED
+  ON_VACATION
+}
+
+Enum order_status {
+  NEW
+  PAID
+  CONFIRMED
+  SHIPPED
+  DELIVERED
+  RECEIVED
+  CANCELED
+}
+
+Enum payment_status {
+  PENDING
+  SUCCESS
+  FAILED
+  WAITING_3DS
+}
+
+Enum delivery_provider {
+  NOVA_POSHTA
+  MEEST
+  UKRPOSHTA
+  SELF_PICKUP
+}
+
+Enum promo_type {
+  PERCENTAGE
+  FIXED_AMOUNT
+}
+
+Enum promo_scope {
+  SPECIFIC_PRODUCTS
+  CATEGORY
+  ENTIRE_SHOP
+}
+
+Enum price_analysis_status {
+  OK
+  LOW_SUSPICIOUS
+  HIGH_SUSPICIOUS
+}
+
+Enum interaction_type {
+  VIEW
+  LIKE
+  CART
+  CLICK_SMART_REPLY
+}
+
+// ==========================================
+// 2. USER DOMAIN & SECURITY
+// ==========================================
+
+Table users {
+  id long [primary key, not null]
+  email string [not null, unique]
+  phone string
+  password string [not null, note: 'hash']
+  first_name string
+  last_name string
+  status user_status [not null, default: 'ACTIVE']
+  role user_role [not null, default: 'BUYER']
+  created_at timestamp [not null, default: 'now()']
+  last_seen_at timestamp [not null, default: 'now()']
+  warning_count int [not null, default: 0]
+  mute_until timestamp
+  trust_score double [default: 1.0] //ML
+}
+
+Table users_settings {
+  user_id long [primary key, not null]
+  language string [default: 'uk']
+  theme string [default: 'light']
+  email_notification boolean [default: 'true']
+  phone_notification boolean [default: 'false']
+}
+
+Table users_addresses {
+  id long [primary key, not null]
+  user_id long [not null]
+  city string
+  department_number string
+  delivery_provider delivery_provider
+  is_default boolean [not null]
+}
+
+Table users_payments {
+  id long [primary key, not null]
+  user_id long [not null]
+  provider_token string
+  card_mask string
+  payment_system string
+  expiry_date string
+  is_default boolean [not null]
+  created_at timestamp [not null, default: 'now()']
+}
+
+Ref: users.id - users_settings.user_id
+Ref: users.id < users_addresses.user_id
+Ref: users.id < users_payments.user_id
+
+// --- TOKENS (SECURITY) ---
+
+Table confirmation_email_tokens {
+  id long [primary key, not null]
+  user_id long [not null]
+  token string [not null]
+  created_at timestamp [not null, default: 'now()']
+  used_at timestamp
+  expired_at timestamp [not null]
+}
+
+Table reset_password_tokens {
+  id long [primary key, not null]
+  user_id long [not null]
+  token string [not null]
+  created_at timestamp [not null, default: 'now()']
+  used_at timestamp
+  expired_at timestamp [not null]
+}
+
+Table magic_login_tokens {
+  id long [primary key, not null]
+  user_id long [not null]
+  token string [not null]
+  created_at timestamp [not null, default: 'now()']
+  used_at timestamp
+  expired_at timestamp [not null]
+}
+
+Table refresh_tokens {
+  id long [primary key, not null]
+  user_id long [not null]
+  token string [not null]
+  device_info string
+  created_at timestamp [not null, default: 'now()']
+  expired_at timestamp [not null, default: 'now()']
+}
+
+Ref: users.id < confirmation_email_tokens.user_id
+Ref: users.id < reset_password_tokens.user_id
+Ref: users.id < magic_login_tokens.user_id
+Ref: users.id < refresh_tokens.user_id
+
+// ==========================================
+// 3. SHOP & PRODUCT DOMAIN
+// ==========================================
+
+Table shops {
+  id long [primary key, not null]
+  owner_id long [not null, ref: > users.id]
+  name string [not null]
+  slug string [not null, unique]
+  description text
+  logo_url string
+  banner_url string
+  status shop_status [not null, default: 'DRAFT']
+  rating double [default: 0.0]
+  is_verified boolean [default: false]
+  created_at timestamp [not null, default: `now()`]
+}
+
+Table categories {
+  id long [primary key, not null]
+  parent_id long [ref: > categories.id]
+  name string [not null]
+  slug string [not null, unique]
+}
+
+Table products {
+  id long [primary key, not null]
+  shop_id long [not null, ref: > shops.id]
+  category_id long [not null, ref: > categories.id]
+
+  name string [not null]
+  description text
+
+  price decimal(10,2) [not null]
+  discount_price decimal(10,2) [note: 'Calculated by Promotion Service']
+  is_available boolean [not null, default: 'true']
+
+  attributes jsonb [not null, note: '{"color": "red", "storage": "256GB"}']
+
+  price_analysis_status price_analysis_status [default: 'OK']
+  estimated_market_price decimal(10,2) [note: 'Avg price for similar items']
+
+  rating double [default: 0.0]
+
+  created_at timestamp [not null, default: `now()`]
+  updated_at timestamp
+}
+
+Table product_images {
+  id long [primary key, not null]
+  product_id long [not null, ref: > products.id]
+  url string [not null]
+  is_main boolean [default: false]
+}
+
+// ==========================================
+// 4. MARKETING (PROMOTIONS)
+// ==========================================
+
+Table promotions {
+  id long [primary key, not null]
+  shop_id long [not null, ref: > shops.id]
+
+  name string [not null]
+  description text
+  type promo_type [not null]
+  value decimal(10,2) [not null]
+
+  scope promo_scope [not null]
+  target_category_id long [ref: > categories.id]
+
+  start_date timestamp [not null]
+  end_date timestamp [not null]
+  is_active boolean [default: true]
+
+  created_at timestamp [not null, default: `now()`]
+}
+
+Table promotion_products {
+  promotion_id long [not null, ref: > promotions.id]
+  product_id long [not null, ref: > products.id]
+
+  indexes {
+    (promotion_id, product_id) [unique]
+  }
+}
+
+// ==========================================
+// 5. ORDER & FINANCE
+// ==========================================
+
+Table orders {
+  id long [primary key, not null]
+  user_id long [ref: > users.id, note: 'Null for Guest']
+
+  total_amount decimal(10,2) [not null]
+  status order_status [not null, default: 'NEW']
+
+  // Snapshots (Фіксація даних на момент покупки)
+  contact_info jsonb [note: '{name, phone, email}']
+  shipping_address jsonb [note: '{city, provider}']
+
+  created_at timestamp [not null, default: `now()`]
+  updated_at timestamp
+}
+
+Table order_items {
+  id long [primary key, not null]
+  order_id long [not null, ref: > orders.id]
+  product_id long [not null, ref: > products.id]
+
+  quantity int [not null]
+  price_at_purchase decimal(10,2) [not null]
+}
+
+Table transactions {
+  id long [primary key, not null]
+  order_id long [not null, ref: > orders.id]
+  external_id string [note: 'LiqPay/Stripe ID']
+
+  status payment_status [not null]
+  fail_reason string
+
+  created_at timestamp [default: `now()`]
+}
+
+// ==========================================
+// 6. SOCIAL & ANALYTICS
+// ==========================================
+
+Table chat_rooms {
+  id long [primary key, not null]
+  buyer_id long [not null, ref: > users.id]
+  shop_id long [not null, ref: > shops.id]
+
+  last_message_at timestamp [default: `now()`]
+
+  indexes {
+    (buyer_id, shop_id) [unique]
+  }
+}
+
+Table chat_messages {
+  id long [primary key, not null]
+  chat_room_id long [not null, ref: > chat_rooms.id]
+  sender_id long [not null, ref: > users.id]
+
+  content text [not null]
+  is_read boolean [default: false]
+
+  is_toxic boolean [default: false, note: 'Filtered by AI']
+
+  created_at timestamp [default: `now()`]
+}
+
+Table reviews {
+  id long [primary key, not null]
+  user_id long [not null, ref: > users.id]
+  product_id long [not null, ref: > products.id]
+
+  order_item_id long [unique, not null, ref: - order_items.id]
+
+  rating int [not null]
+  comment text
+
+  sentiment_score double
+
+  created_at timestamp [default: `now()`]
+}
+
+// Дані для навчання ML (Рекомендації)
+Table user_interactions {
+  id long [primary key, not null]
+  user_id long [ref: > users.id]
+  product_id long [not null, ref: > products.id]
+
+  type interaction_type [not null]
+  duration_sec int
+  created_at timestamp [not null, default: `now()`]
+}
+
+Table wishlist {
+  id long [primary key, not null]
+  user_id long [ref: > users.id]
+  product_id long [not null, ref: > products.id]
+  created_at timestamp [not null, default: `now()`]
+
+  indexes {
+    (user_id, product_id) [unique]
+  }
+}

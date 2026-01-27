@@ -16,7 +16,6 @@ import java.time.Instant;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ChatRoom {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;

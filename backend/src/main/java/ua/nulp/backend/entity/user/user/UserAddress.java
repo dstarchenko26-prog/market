@@ -11,7 +11,6 @@ import ua.nulp.backend.entity.enums.DeliveryProvider;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-//Потребує допрацювання
 public class UserAddress {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -27,25 +26,20 @@ public class UserAddress {
     private String district; // "Стрийський район"
     @Column(nullable = false)
     private String city;     // "Миколаїв" (без району неясно, це Львівська чи Миколаївська обл)
-
-    @Column(name = "city_ref")
-    private String cityRef;  // Універсальний ID міста із зовнішнього API
-    @Column(name = "zip_code")
-    private String zipCode;  // Критично для Укрпошти
+    @Column(name = "city_id")
+    private String cityId;  // Універсальний ID міста із зовнішнього API
 
     // === Відділення ===
-    @Column(name = "department_number")
-    private String departmentNumber;
-    @Column(name = "department_ref")
-    private String departmentRef; // Універсальний ID відділення
+    private String department;
+    @Column(name = "department_id")
+    private String departmentId; // Універсальний ID відділення
 
     // === Адресна доставка ===
     private String street;
-    @Column(name = "street_ref")
-    private String streetRef;
-
     private String house;
     private String apartment;
+    @Column(name = "street_id")
+    private String streetId;
 
     // === Службові ===
     @Enumerated(EnumType.STRING)

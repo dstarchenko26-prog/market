@@ -11,7 +11,7 @@ import ua.nulp.backend.entity.enums.DeliveryProvider;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-
+//Потребує допрацювання
 public class UserAddress {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

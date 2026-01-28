@@ -1,32 +1,33 @@
 services:
-  # Сервіс бази даних
   db:
     image: postgres:15-alpine
     container_name: market-db
     restart: always
+    ports:
+      - "5432:5432"
     environment:
       POSTGRES_DB: ${POSTGRES_DB}
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-    ports:
-      - "5432:5432" # Щоб ви могли підключатися через IntelliJ/pgAdmin
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
     volumes:
-      - db_data:/var/lib/postgresql/data # Щоб дані не зникали після перезапуску
+      - db_data:/var/lib/postgresql/data
 
-  # Сервіс бекенду
   backend:
-    build: ./backend # Шлях до папки з Dockerfile
+    build: ./backend
     container_name: market-backend
     restart: always
     ports:
-      - "8080:8080"
-    environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/${POSTGRES_DB}
-      POSTGRES_DB: ${POSTGRES_DB}
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      - "${PORT}:${PORT}"
     depends_on:
-      - db # Чекаємо запуску бази
+      - db
+
+    env_file:
+      - .env
+
+    environment:
+      DB_URL: jdbc:postgresql://db:5432/${POSTGRES_DB}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
 
 volumes:
   db_data:

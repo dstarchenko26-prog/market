@@ -32,7 +32,6 @@ public class User implements UserDetails {
 
     private String phone;
 
-    @Column(nullable = false)
     private String password;
 
     @Column(name = "first_name")

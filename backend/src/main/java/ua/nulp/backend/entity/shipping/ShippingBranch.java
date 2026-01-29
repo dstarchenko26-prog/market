@@ -1,4 +1,4 @@
-package ua.nulp.backend.entity.delivery;
+package ua.nulp.backend.entity.shipping;
 
 import jakarta.persistence.*;
 import lombok.*;

@@ -1,0 +1,8 @@
+400 - @Valid - неприйшли дані
+400 - BadRequestException - логічна помилка
+401 - BadCredentialsException - неправильні дані входу
+403 - AccessDeniedException - нема доступу
+404 - ResourceNotFoundException - не знайдено
+409 - ResourceConflictException - вже існує
+415 - auto - неправильний тип
+500 - auto
